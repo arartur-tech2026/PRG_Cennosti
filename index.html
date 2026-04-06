@@ -1,0 +1,910 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Интерактив – Выбор ценностей</title>
+  <style>
+    /* --- ПЕРЕМЕННЫЕ И ТЕМЫ --- */
+    :root {
+      --bg-main: #f0f4f8;
+      --bg-surface: #ffffff;
+      --text-main: #111827;
+      --text-muted: #4b5563;
+      --accent: #1e5b9f; /* Синий как на макетах */
+      --accent-soft: #e0f2fe;
+      --accent-anti: #60a5fa; /* Голубой для антиценностей */
+      --star-active: #f59e0b;
+      --border: #e5e7eb;
+      --border-dashed: #9ca3af;
+      
+      --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+      
+      --radius-lg: 16px;
+      --radius-md: 12px;
+    }
+
+    [data-theme="dark"] {
+      --bg-main: #0f172a;
+      --bg-surface: #1e293b;
+      --text-main: #f9fafb;
+      --text-muted: #9ca3af;
+      --accent: #3b82f6;
+      --accent-soft: rgba(59, 130, 246, 0.2);
+      --accent-anti: #93c5fd;
+      --border: #374151;
+      --border-dashed: #4b5563;
+    }
+
+    * { 
+      box-sizing: border-box; 
+      margin: 0; 
+      padding: 0; 
+      -webkit-tap-highlight-color: transparent; 
+      word-break: normal;
+      overflow-wrap: break-word; 
+    }
+
+    /* АГРЕССИВНЫЙ ФИКС СКРОЛЛА (SCROLL-CHAINING) ДЛЯ iOS/iPadOS IFRAME */
+    html, body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: var(--bg-main);
+      color: var(--text-main);
+      line-height: 1.4;
+      position: fixed; 
+      top: 0; left: 0; right: 0; bottom: 0;
+      width: 100%; height: 100%;
+      overflow: hidden; 
+      overscroll-behavior: none; 
+      touch-action: none; 
+      display: flex;
+      flex-direction: column;
+      transition: background-color 0.3s ease, color 0.3s ease;
+    }
+
+    svg { width: 1.5rem; height: 1.5rem; fill: currentColor; flex-shrink: 0; }
+
+    /* --- ИНТЕРФЕЙС --- */
+    .header {
+      flex-shrink: 0; display: flex; align-items: center; justify-content: space-between;
+      padding: clamp(10px, 2vh, 16px) clamp(12px, 3vw, 20px);
+      background-color: var(--bg-surface); border-bottom: 1px solid var(--border); z-index: 10;
+    }
+    
+    .header-title {
+      font-size: clamp(1.1rem, 4vw, 1.4rem); font-weight: 800; color: var(--accent);
+      display: flex; align-items: center; gap: 8px;
+    }
+
+    .header-controls { display: flex; gap: clamp(6px, 1.5vw, 10px); flex-shrink: 0; }
+    .btn-icon {
+      background: var(--bg-surface); border: 1px solid var(--border); color: var(--text-main);
+      width: clamp(32px, 9vw, 40px); height: clamp(32px, 9vw, 40px); border-radius: 50%;
+      display: flex; align-items: center; justify-content: center; cursor: pointer;
+      box-shadow: var(--shadow-sm); transition: transform 0.2s;
+    }
+    .btn-icon:active { transform: scale(0.9); }
+
+    /* Вкладки */
+    .tabs-wrapper {
+      background-color: var(--bg-surface);
+      border-bottom: 1px solid var(--border);
+      padding: 10px 15px;
+      display: flex;
+      justify-content: center;
+      flex-shrink: 0;
+      z-index: 9;
+    }
+    .tabs-container {
+      display: flex;
+      background: var(--bg-main);
+      border-radius: 99px;
+      padding: 4px;
+      border: 1px solid var(--border);
+      width: 100%;
+      max-width: 500px;
+    }
+    .tab-btn {
+      flex: 1;
+      padding: 8px 12px;
+      font-size: clamp(0.85rem, 3.5vw, 1rem); 
+      font-weight: 700;
+      border-radius: 99px;
+      cursor: pointer;
+      color: var(--text-muted);
+      border: none;
+      background: transparent;
+      transition: all 0.2s;
+      text-align: center;
+    }
+    .tab-btn.active {
+      background: var(--accent);
+      color: #fff;
+      box-shadow: var(--shadow-sm);
+    }
+
+    /* РАБОЧАЯ ЗОНА */
+    .workspace {
+      flex: 1; 
+      overflow-y: auto; 
+      padding: 20px 15px; 
+      -webkit-overflow-scrolling: touch; 
+      overscroll-behavior: contain; 
+      touch-action: pan-y; 
+      position: relative;
+    }
+
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 20px;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding-bottom: 40px;
+      position: relative;
+    }
+
+    /* СПЕЦИАЛЬНАЯ КАРТОЧКА (УСТАНОВКА) */
+    .special-card {
+      background-color: var(--bg-surface);
+      border: 2px solid var(--accent);
+      border-radius: var(--radius-lg);
+      padding: 0;
+      text-align: center;
+      box-shadow: var(--shadow-md);
+      grid-column: 1 / -1; /* Занимает всю ширину сетки */
+      overflow: hidden;
+      margin-bottom: 10px;
+    }
+    .special-card-header {
+      background-color: var(--accent);
+      color: #fff;
+      padding: 10px;
+      font-weight: 800;
+      font-size: clamp(0.9rem, 3vw, 1.1rem);
+      letter-spacing: 0.05em;
+    }
+    .special-card-body {
+      padding: clamp(15px, 4vw, 20px);
+      font-size: clamp(1rem, 3vw, 1.2rem);
+      font-weight: 700;
+      color: var(--text-main);
+      text-transform: uppercase;
+      line-height: 1.5;
+    }
+
+    /* ОБЫЧНАЯ КАРТОЧКА (FLIP КВАДРАТ) */
+    .flip-card {
+      width: 100%; 
+      aspect-ratio: 1 / 1; 
+      perspective: 1000px; 
+      cursor: pointer;
+      position: relative;
+      user-select: none;
+      z-index: 1;
+    }
+
+    .flip-card.is-dragging {
+      z-index: 100;
+    }
+
+    /* Индикаторы свайпа (под карточкой) */
+    .swipe-indicator {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      border-radius: var(--radius-lg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 3rem;
+      color: #fff;
+      opacity: 0;
+      z-index: 0;
+      transition: opacity 0.2s;
+    }
+    .swipe-right-bg { background-color: rgba(16, 185, 129, 0.9); }
+    .swipe-left-bg { background-color: rgba(239, 68, 68, 0.9); }
+
+    .flip-card-inner {
+      position: relative; 
+      width: 100%; 
+      height: 100%; 
+      text-align: center;
+      transition: transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1); 
+      transform-style: preserve-3d;
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-md);
+      z-index: 2; /* Выше индикаторов */
+    }
+
+    .flip-card.is-flipped .flip-card-inner { 
+      transform: rotateY(180deg); 
+    }
+    
+    .flip-card.is-dragging .flip-card-inner {
+      box-shadow: var(--shadow-lg);
+      transform: scale(1.05);
+    }
+    .flip-card.is-dragging.is-flipped .flip-card-inner {
+      transform: scale(1.05) rotateY(180deg);
+    }
+
+    .flip-card-front, .flip-card-back {
+      position: absolute; 
+      width: 100%; 
+      height: 100%;
+      -webkit-backface-visibility: hidden; 
+      backface-visibility: hidden;
+      border-radius: var(--radius-lg); 
+      padding: clamp(12px, 3vw, 20px);
+      background-color: var(--bg-surface);
+      border: 2px dashed var(--accent);
+      display: flex; 
+      flex-direction: column;
+      overflow: hidden;
+    }
+    
+    /* Стили для антиценностей */
+    .flip-card.is-anti .flip-card-front,
+    .flip-card.is-anti .flip-card-back {
+      border-color: var(--accent-anti);
+    }
+
+    /* ЛИЦЕВАЯ СТОРОНА */
+    .card-top-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      width: 100%;
+      margin-bottom: auto;
+    }
+
+    .card-number {
+      width: clamp(32px, 8vw, 42px);
+      height: clamp(32px, 8vw, 42px);
+      background-color: var(--accent);
+      color: #fff;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: clamp(1rem, 3.5vw, 1.2rem);
+      font-weight: 800;
+      flex-shrink: 0;
+      box-shadow: var(--shadow-sm);
+    }
+    .flip-card.is-anti .card-number { background-color: var(--accent-anti); }
+
+    .btn-star {
+      background: transparent;
+      border: none;
+      color: var(--border-dashed);
+      cursor: pointer;
+      padding: 5px;
+      transition: color 0.2s, transform 0.2s;
+      z-index: 10;
+    }
+    .btn-star.active { color: var(--star-active); }
+    .btn-star:active { transform: scale(0.8); }
+
+    .card-title {
+      font-size: clamp(1.2rem, 5vw, 1.6rem);
+      font-weight: 800;
+      color: var(--accent);
+      line-height: 1.1;
+      margin: 10px 0;
+    }
+    .flip-card.is-anti .card-title { color: var(--accent-anti); }
+
+    .card-quote {
+      font-size: clamp(1rem, 4vw, 1.3rem);
+      font-weight: 800;
+      color: var(--text-main);
+      margin-bottom: auto;
+    }
+
+    .card-hint {
+      font-size: clamp(0.7rem, 2.5vw, 0.8rem);
+      color: var(--text-muted);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-top: 10px;
+    }
+
+    /* ОБРАТНАЯ СТОРОНА */
+    .flip-card-back {
+      transform: rotateY(180deg);
+      background-color: var(--bg-main);
+      border-style: solid;
+      align-items: flex-start;
+      text-align: left;
+    }
+
+    .drag-handle {
+      color: var(--text-muted);
+      cursor: grab;
+      padding: 5px;
+      z-index: 10;
+    }
+    .drag-handle:active { cursor: grabbing; }
+
+    .back-title {
+      font-size: clamp(1rem, 4vw, 1.2rem);
+      font-weight: 800;
+      color: var(--accent);
+      margin-bottom: 10px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 5px;
+      width: 100%;
+      text-align: center;
+    }
+    .flip-card.is-anti .back-title { color: var(--accent-anti); }
+
+    .card-desc {
+      font-size: clamp(0.85rem, 3.5vw, 1rem);
+      color: var(--text-main);
+      line-height: 1.4;
+      flex: 1;
+      overflow-y: auto;
+      padding-right: 4px;
+      touch-action: pan-y;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: thin;
+      scrollbar-color: var(--border-dashed) transparent;
+    }
+    .card-desc::-webkit-scrollbar { width: 4px; }
+    .card-desc::-webkit-scrollbar-thumb { background: var(--border-dashed); border-radius: 4px; }
+
+    /* Подсказки */
+    .onboarding-toast {
+      position: absolute;
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      background-color: var(--text-main);
+      color: var(--bg-surface);
+      padding: 8px 16px;
+      border-radius: 99px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      z-index: 100;
+      pointer-events: none;
+      opacity: 0.9;
+      white-space: nowrap;
+      animation: fadeOutToast 4s forwards;
+    }
+    @keyframes fadeOutToast {
+      0%, 70% { opacity: 0.9; }
+      100% { opacity: 0; display: none; }
+    }
+
+    .empty-state {
+      grid-column: 1 / -1;
+      text-align: center;
+      color: var(--text-muted);
+      padding: 40px 20px;
+      font-size: clamp(0.95rem, 3.5vw, 1.1rem);
+      font-weight: 600;
+    }
+
+  </style>
+</head>
+<body>
+
+  <!-- ИКОНКИ -->
+  <svg style="display: none;" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <symbol id="icon-star" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+      </symbol>
+      <symbol id="icon-drag" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="9" cy="12" r="1"></circle><circle cx="9" cy="5" r="1"></circle><circle cx="9" cy="19" r="1"></circle>
+        <circle cx="15" cy="12" r="1"></circle><circle cx="15" cy="5" r="1"></circle><circle cx="15" cy="19" r="1"></circle>
+      </symbol>
+      <symbol id="icon-moon" viewBox="0 0 24 24"><path fill-rule="evenodd" d="M9.528 1.718a.75.75 0 01.162.819A8.97 8.97 0 009 6a9 9 0 009 9 8.97 8.97 0 003.463-.69.75.75 0 01.981.98 10.503 10.503 0 01-9.694 6.46c-5.799 0-10.5-4.701-10.5-10.5 0-4.368 2.667-8.112 6.46-9.694a.75.75 0 01.818.162z" clip-rule="evenodd"/></symbol>
+      <symbol id="icon-sun" viewBox="0 0 24 24"><path d="M12 2.25a.75.75 0 01.75.75v2.25a.75.75 0 01-1.5 0V3a.75.75 0 01.75-.75zM7.5 12a4.5 4.5 0 119 0 4.5 4.5 0 01-9 0zM18.894 6.166a.75.75 0 00-1.06-1.06l-1.591 1.59a.75.75 0 101.06 1.061l1.591-1.59zM21.75 12a.75.75 0 01-.75.75h-2.25a.75.75 0 010-1.5H21a.75.75 0 01.75.75zM17.834 18.894a.75.75 0 001.06-1.06l-1.59-1.591a.75.75 0 10-1.061 1.06l1.59 1.591zM12 18.75a.75.75 0 01.75.75V21a.75.75 0 01-1.5 0v-1.5a.75.75 0 01.75-.75zM6.166 17.834a.75.75 0 00-1.06 1.06l1.59 1.591a.75.75 0 101.06-1.061l-1.59-1.59zM4.5 12a.75.75 0 01-.75.75H1.5a.75.75 0 010-1.5h2.25a.75.75 0 01.75.75zM6.166 6.166a.75.75 0 001.06-1.06l-1.59-1.59a.75.75 0 00-1.061 1.06l1.59 1.59z"/></symbol>
+      <symbol id="icon-maximize" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path></symbol>
+      <symbol id="icon-minimize" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"></path></symbol>
+    </defs>
+  </svg>
+
+  <!-- ИНТЕРФЕЙС -->
+  <header class="header">
+    <div class="header-title">Выбор ценностей</div>
+    <div class="header-controls">
+      <button class="btn-icon" id="btn-theme" title="Сменить тему">
+        <svg><use id="icon-theme-use" href="#icon-moon"></use></svg>
+      </button>
+      <button class="btn-icon" id="btn-fullscreen" title="На весь экран">
+        <svg><use id="icon-fullscreen-use" href="#icon-maximize"></use></svg>
+      </button>
+    </div>
+  </header>
+
+  <div class="tabs-wrapper">
+    <div class="tabs-container">
+      <button class="tab-btn active" id="tab-all">Все карточки</button>
+      <button class="tab-btn" id="tab-fav">Избранное (<span id="fav-count">0</span>/5)</button>
+    </div>
+  </div>
+
+  <main class="workspace" id="workspace">
+    <div class="onboarding-toast" id="onboarding">Тапни – перевернуть. Смахни – выбрать 👉</div>
+    <div class="cards-grid" id="cards-container">
+      <!-- Контент генерируется JS -->
+    </div>
+  </main>
+
+  <script>
+    // --- АГРЕССИВНЫЙ ФИКС СКРОЛЛА (SCROLL-CHAINING) ДЛЯ iOS / IFRAME ---
+    document.addEventListener('touchmove', function(e) {
+      if (e.touches.length > 1) return; 
+      
+      const scrollable = e.target.closest('.workspace, .card-desc');
+      if (window.isDraggingCard) {
+          if (e.cancelable) e.preventDefault();
+          return;
+      }
+
+      if (scrollable) {
+        const isAtTop = scrollable.scrollTop === 0;
+        const isAtBottom = scrollable.scrollHeight - scrollable.scrollTop <= scrollable.clientHeight + 1;
+        const touchY = e.touches[0].clientY;
+        const dy = touchY - (scrollable.lastTouchY || touchY);
+        scrollable.lastTouchY = touchY;
+
+        if ((isAtTop && dy > 0) || (isAtBottom && dy < 0)) {
+          if (e.cancelable) e.preventDefault();
+        }
+      } else {
+        if (e.cancelable) e.preventDefault();
+      }
+    }, { passive: false });
+
+    document.addEventListener('touchstart', function(e) {
+      const scrollable = e.target.closest('.workspace, .card-desc');
+      if (scrollable) {
+        scrollable.lastTouchY = e.touches[0].clientY;
+      }
+    }, { passive: false });
+
+
+    // --- БАЗА ДАННЫХ КАРТОЧЕК ---
+    let cardsData = [
+      { id: 1, num: 1, title: "Жизнь", quote: "«Жизнь дороже золота»", desc: "Жизнь – высшая ценность, и речь всегда о конкретном человеке, а не об абстрактном «индивиде». Защита жизни означает приоритет безопасности, заботы и недопустимость обесценивания человека как «расходного материала».", isAnti: false, isFav: false, order: 0 },
+      { id: 2, num: 2, title: "Патриотизм", quote: "«Родная сторона – мать, чужая – мачеха»", desc: "Патриотизм – это осознанное чувство причастности к судьбе страны, готовность вкладываться в её развитие и, если потребуется, в её защиту. Это не лозунг, а внутренняя позиция: «мне не всё равно, что будет с моими людьми и моей землёй».", isAnti: false, isFav: false, order: 0 },
+      { id: 3, num: 3, title: "Созидательный труд", quote: "«Труд кормит, а лень портит»", desc: "Созидать – значит делать мир лучше. Он строит, развивает и улучшает, а не имитирует деятельность и не разрушает. В традиции он понимается как форма самореализации и вклад в общее дело, противоположность паразитизму и потребительскому отношению к жизни.", isAnti: false, isFav: false, order: 0 },
+      { id: 4, num: 4, title: "Справедливость", quote: "«Что посеешь, то и пожнёшь»", desc: "Это не только формальное равенство, а соразмерность и учет обстоятельств, возможностей и нужд человека. Справедливо – когда сильный не пользуется уязвимостью слабого, а помогает, и когда вознаграждение и ответственность соотносятся с поступком.", isAnti: false, isFav: false, order: 0 },
+      { id: 5, num: 5, title: "Коллективизм", quote: "«Один в поле не воин»", desc: "Коллективизм – не отрицание личности, а свободное духовное единение людей в сотрудничестве, братстве и взаимной ответственности. «Мы» здесь не уничтожает «я», а помогает ему раскрыться через участие в общем деле и взаимную поддержку.", isAnti: false, isFav: false, order: 0 },
+      { id: 6, num: 6, title: "Крепкая семья", quote: "«В семье лад – в доме клад»", desc: "Крепкая семья – это больше, чем совместное проживание: это союз, основанный на любви, ответственности и заботе друг о друге. Семья – пространство, где формируются доверие, нравственные ориентиры и преемственность поколений; она создаёт устойчивость общества.", isAnti: false, isFav: false, order: 0 },
+      { id: 7, num: 7, title: "Права и свободы человека", quote: "«Свобода одного гражданина заканчивается там, где начинается свобода другого»", desc: "Права и свободы – это признание человека высшей ценностью и установление границ, которые нельзя нарушать ни обществу, ни государству, ни отдельным людям, позволяют человеку жить достойно, свободно и безопасно.", isAnti: false, isFav: false, order: 0 },
+      { id: 8, num: 8, title: "Служение Отечеству", quote: "«За Родину-мать не страшно умирать»", desc: "Это добровольный выбор подчинить личные интересы чему-то большему, не из принуждения, а из достоинства и смысла. Ответственность за судьбу Отечества – понимание, что будущее зависит от ежедневных профессиональных и нравственных решений каждого.", isAnti: false, isFav: false, order: 0 },
+      { id: 9, num: 9, title: "Приоритет духовного над материальным", quote: "«Не в деньгах счастье»", desc: "Материальные блага важны, но не должны становиться единственной целью жизни и мерилом человека. Приоритет духовного – это выбор смысла, знания, красоты, совести, служения и внутреннего роста как высших ориентиров, без которых общество деградирует.", isAnti: false, isFav: false, order: 0 },
+      { id: 10, num: 10, title: "Историческая память", quote: "«Без прошлого нет будущего»", desc: "Историческая память – не набор дат, а внутреннее присвоение истории и понимание себя как продолжателя большого дела. Преемственность поколений – передача не только ресурсов, но прежде всего смыслов, ценностей и жизненных ориентиров, ответственности перед прошлым и будущим.", isAnti: false, isFav: false, order: 0 },
+      { id: 11, num: 11, title: "Взаимопомощь и взаимоуважение", quote: "«Друг познаётся в беде»", desc: "Готовность поддержать человека в трудный момент делом, временем, участием, не ожидая немедленной выгоды. Взаимоуважение – признание достоинства каждого, несмотря на различия во взглядах, вероисповедании, социальном положении.", isAnti: false, isFav: false, order: 0 },
+      { id: 12, num: 12, title: "Достоинство", quote: "«Береги честь смолоду»", desc: "Уважение к себе и другим, осознание собственной ценности и ценности других людей, стремление сохранять честь и порядочность в любых жизненных ситуациях.", isAnti: false, isFav: false, order: 0 },
+      { id: 13, num: 13, title: "Гражданственность", quote: "«Где родился, там и пригодился»", desc: "Это ответственность, а не равнодушие. Осознание себя как гражданина своего Отечества, чувство ответственности за его судьбу, готовность участвовать в общественной жизни, соблюдать законы и нормы общества, отстаивать его интересы.", isAnti: false, isFav: false, order: 0 },
+      { id: 14, num: 14, title: "Высокие нравственные идеалы", quote: "«Живи по совести»", desc: "Это вершины, к которым стремится человек: честь, совесть, верность, мужество, мудрость. Это культурная и духовная планка, которую общество старается сохранить и передать дальше как меру человеческого качества.", isAnti: false, isFav: false, order: 0 },
+      { id: 15, num: 15, title: "Гуманизм", quote: "«Человек человеку друг и брат»", desc: "Признание ценности человека, его права на свободу, счастье и развитие. Гуманизм предполагает уважение к человеческому достоинству, отказ от насилия и дискриминации, стремление к созданию условий для всестороннего развития личности.", isAnti: false, isFav: false, order: 0 },
+      { id: 16, num: 16, title: "Единство народов", quote: "«В единстве – сила»", desc: "Единство в многообразии – наша сила. Способность жить вместе в многообразии культур, языков и религий, не теряя идентичности. Сила достигается не устранением различий, а их гармоничным сочетанием вокруг общих базовых ценностей.", isAnti: false, isFav: false, order: 0 },
+      { id: 17, num: 17, title: "Милосердие", quote: "«Помогать – значит оставаться человеком»", desc: "Готовность помочь тем, кто в беде. Милосердие предполагает бескорыстное служение другим, стремление облегчить страдания и поддержать тех, кто испытывает трудности. Это не слабость, а нравственная сила, которая удерживает общество от ожесточения и равнодушия.", isAnti: false, isFav: false, order: 0 },
+      
+      // Антиценности
+      { id: 18, num: 18, title: "Материализм", quote: "«Деньги – всему голова»", desc: "Ориентирование в своих действиях и решениях преимущественно на получение прибыли, зачастую пренебрегая нравственными принципами, душевным развитием и межличностными отношениями. Обесцениваются нематериальные аспекты жизни, такие как дружба, любовь, честь и достоинство.", isAnti: true, isFav: false, order: 0 },
+      { id: 19, num: 19, title: "Равнодушие", quote: "«Моя хата с краю – ничего не знаю»", desc: "Проявляется в отсутствии желания помочь, поддержать тем, кто в этом нуждается, ведёт к ослаблению социальных связей, разрушению доверия в обществе, создаёт атмосферу изоляции и отчуждения, где каждый оказывается наедине со своими проблемами.", isAnti: true, isFav: false, order: 0 },
+      { id: 20, num: 20, title: "Несправедливость", quote: "«Закон что дышло»", desc: "Принципы и правила применяются выборочно, в зависимости от личных интересов, предубеждений или обстоятельств. Двойные стандарты подразумевают, что одинаковые действия оцениваются по-разному лишь из-за того, кто их совершает. Это подрывает основы здорового общества.", isAnti: true, isFav: false, order: 0 },
+      { id: 21, num: 21, title: "Паразитизм", quote: "«Чужими руками жар загребать»", desc: "Модель поведения, при которой человек получает блага, не внося сопоставимого вклада, и перекладывает нагрузку на других. Проявляется в имитации работы, присвоении чужих результатов, постоянном «пользовании» чужими ресурсами без своей отдачи.", isAnti: true, isFav: false, order: 0 },
+      { id: 22, num: 22, title: "Искажение памяти", quote: "«Иван, родства не помнящий»", desc: "Забвение ведёт к потере исторической памяти, размыванию национальной идентичности и культурного наследия. Разрушает преемственность поколений, подрывает доверие к историческим источникам и может привести к повторению трагических ошибок прошлого.", isAnti: true, isFav: false, order: 0 }
+    ];
+
+    let currentTab = 'all'; // 'all' или 'fav'
+    let currentTheme = 'light';
+    window.isDraggingCard = false;
+
+    const container = document.getElementById('cards-container');
+    const tabAllBtn = document.getElementById('tab-all');
+    const tabFavBtn = document.getElementById('tab-fav');
+    const favCountEl = document.getElementById('fav-count');
+
+    // --- РЕНДЕР И ЛОГИКА ---
+    function render() {
+      container.innerHTML = '';
+      let favCards = cardsData.filter(c => c.isFav).sort((a, b) => a.order - b.order);
+      favCountEl.textContent = favCards.length;
+
+      if (currentTab === 'all') {
+        const specialCard = document.createElement('div');
+        specialCard.className = 'special-card';
+        specialCard.innerHTML = `
+          <div class="special-card-header">ПОМНИ: МИР ВЗАИМЕН</div>
+          <div class="special-card-body">ПОСТУПАЙ С ЛЮДЬМИ ТАК, КАК ХОЧЕШЬ, ЧТОБЫ ОНИ ПОСТУПАЛИ С ТОБОЙ</div>
+        `;
+        container.appendChild(specialCard);
+
+        cardsData.forEach(card => {
+          container.appendChild(createCardElement(card, false));
+        });
+      } else {
+        if (favCards.length === 0) {
+          container.innerHTML = `<div class="empty-state">Вы пока не выбрали ни одной ценности. Перейдите во вкладку «Все карточки» и смахните нужные вправо.</div>`;
+        } else {
+          favCards.forEach((card, index) => {
+            container.appendChild(createCardElement(card, true, index));
+          });
+        }
+      }
+    }
+
+    function createCardElement(card, isFavTab, index = 0) {
+      const el = document.createElement('div');
+      el.className = `flip-card ${card.isAnti ? 'is-anti' : ''}`;
+      el.dataset.id = card.id;
+
+      let dragHandleHTML = '';
+      if (isFavTab) {
+        dragHandleHTML = `
+          <div class="drag-handle" data-id="${card.id}">
+            <svg><use href="#icon-drag"></use></svg>
+          </div>
+        `;
+      }
+
+      el.innerHTML = `
+        <div class="swipe-indicator swipe-right-bg">⭐</div>
+        <div class="swipe-indicator swipe-left-bg">❌</div>
+        <div class="flip-card-inner">
+            <div class="flip-card-front">
+                <div class="card-top-row">
+                    <div class="card-number">${card.num}</div>
+                    <button class="btn-star ${card.isFav ? 'active' : ''}" data-id="${card.id}">
+                        <svg fill="${card.isFav ? 'currentColor' : 'none'}"><use href="#icon-star"></use></svg>
+                    </button>
+                </div>
+                <div class="card-title">${card.title}</div>
+                <div class="card-quote">${card.quote}</div>
+                <div class="card-hint">Нажми, чтобы прочитать</div>
+            </div>
+            <div class="flip-card-back">
+                <div class="card-top-row">
+                    <div class="card-number">${card.num}</div>
+                    ${dragHandleHTML}
+                </div>
+                <div class="back-title">${card.title}</div>
+                <div class="card-desc">${card.desc}</div>
+            </div>
+        </div>
+      `;
+
+      // Обработчик звездочки
+      const starBtn = el.querySelector('.btn-star');
+      starBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        toggleFav(card.id);
+        if(navigator.vibrate) navigator.vibrate(15);
+      });
+
+      // Логика Тиндер-свайпов и флипа
+      initSwipeAndFlipLogic(el, card, isFavTab);
+
+      // Логика сортировки (Только Избранное)
+      if (isFavTab) {
+        initGridDragLogic(el, card.id, index);
+      }
+
+      return el;
+    }
+
+    function toggleFav(id, forceState = null) {
+      const card = cardsData.find(c => c.id === id);
+      if (!card) return;
+
+      if (forceState !== null) {
+        card.isFav = forceState;
+      } else {
+        card.isFav = !card.isFav;
+      }
+
+      if (card.isFav) {
+        card.order = Date.now();
+      }
+      render();
+    }
+
+    // --- ЛОГИКА ФЛИПА И СВАЙПОВ (TINDER) В СЕТКЕ ---
+    function initSwipeAndFlipLogic(el, card, isFavTab) {
+      let startX = 0, startY = 0;
+      let currentX = 0;
+      let isSwiping = false;
+      let isScrolling = false;
+      const threshold = 80; 
+
+      const inner = el.querySelector('.flip-card-inner');
+      const indRight = el.querySelector('.swipe-right-bg');
+      const indLeft = el.querySelector('.swipe-left-bg');
+
+      const startInteraction = (x, y, target) => {
+        if (target.closest('.drag-handle') || target.closest('.btn-star') || target.closest('.card-desc')) return;
+        startX = x;
+        startY = y;
+        isSwiping = true;
+        isScrolling = false;
+        inner.style.transition = 'none';
+      };
+
+      const moveInteraction = (x, y) => {
+        if (!isSwiping) return;
+
+        const diffX = x - startX;
+        const diffY = y - startY;
+
+        // Если пользователь скроллит вниз/вверх - отменяем свайп
+        if (!isScrolling && Math.abs(diffY) > 10 && Math.abs(diffY) > Math.abs(diffX)) {
+            isSwiping = false;
+            isScrolling = true;
+            inner.style.transform = el.classList.contains('is-flipped') ? 'rotateY(180deg)' : 'rotateY(0)';
+            indRight.style.opacity = 0;
+            indLeft.style.opacity = 0;
+            return;
+        }
+
+        if (isScrolling) return;
+
+        currentX = diffX;
+        if (isFavTab && currentX > 0) currentX = 0; // Из избранного только влево
+
+        const flipRot = el.classList.contains('is-flipped') ? 180 : 0;
+        inner.style.transform = `translateX(${currentX}px) rotateY(${flipRot}deg) rotateZ(${currentX * 0.05}deg)`;
+
+        // Показ индикаторов под карточкой
+        if (currentX > 20 && !isFavTab) {
+           indRight.style.opacity = Math.min(currentX / threshold, 1);
+           indLeft.style.opacity = 0;
+        } else if (currentX < -20) {
+           indLeft.style.opacity = Math.min(Math.abs(currentX) / threshold, 1);
+           indRight.style.opacity = 0;
+        } else {
+           indRight.style.opacity = 0;
+           indLeft.style.opacity = 0;
+        }
+      };
+
+      const endInteraction = () => {
+        if (!isSwiping) return;
+        isSwiping = false;
+        inner.style.transition = 'transform 0.4s cubic-bezier(0.4, 0.2, 0.2, 1)';
+        indRight.style.opacity = 0;
+        indLeft.style.opacity = 0;
+
+        if (Math.abs(currentX) < 10 && !isScrolling) {
+          // Это был клик (ТАП) -> переворачиваем
+          el.classList.toggle('is-flipped');
+          inner.style.transform = ''; 
+          if(navigator.vibrate) navigator.vibrate(10);
+        } else if (currentX > threshold && !isFavTab) {
+          // Свайп вправо (Добавить в избранное)
+          inner.style.transform = `translateX(${window.innerWidth}px) rotateZ(20deg)`;
+          setTimeout(() => toggleFav(card.id, true), 200);
+          if(navigator.vibrate) navigator.vibrate(20);
+        } else if (currentX < -threshold) {
+          // Свайп влево (Убрать из избранного)
+          inner.style.transform = `translateX(-${window.innerWidth}px) rotateZ(-20deg)`;
+          setTimeout(() => toggleFav(card.id, false), 200);
+          if(navigator.vibrate) navigator.vibrate(20);
+        } else {
+          // Возврат на место
+          inner.style.transform = ''; 
+        }
+        currentX = 0;
+      };
+
+      // Сенсорные устройства (Touch)
+      el.addEventListener('touchstart', (e) => startInteraction(e.touches[0].clientX, e.touches[0].clientY, e.target), {passive: true});
+      el.addEventListener('touchmove', (e) => moveInteraction(e.touches[0].clientX, e.touches[0].clientY), {passive: true});
+      el.addEventListener('touchend', endInteraction);
+
+      // ПК (Mouse)
+      el.addEventListener('mousedown', (e) => {
+        if (e.button !== 0) return; 
+        startInteraction(e.clientX, e.clientY, e.target);
+        
+        const onMouseMove = (ev) => moveInteraction(ev.clientX, ev.clientY);
+        const onMouseUp = () => {
+          endInteraction();
+          document.removeEventListener('mousemove', onMouseMove);
+          document.removeEventListener('mouseup', onMouseUp);
+        };
+        
+        document.addEventListener('mousemove', onMouseMove);
+        document.addEventListener('mouseup', onMouseUp);
+      });
+    }
+
+    // --- ЛОГИКА СОРТИРОВКИ ДЛЯ СЕТКИ (2D DRAG & DROP) ---
+    function initGridDragLogic(cardEl, cardId, index) {
+      const handle = cardEl.querySelector('.drag-handle');
+      if (!handle) return;
+
+      let startX = 0, startY = 0;
+      let startRect = null;
+      let clone = null;
+      let placeholders = [];
+
+      const startDrag = (x, y) => {
+        window.isDraggingCard = true;
+        startX = x;
+        startY = y;
+        startRect = cardEl.getBoundingClientRect();
+
+        cardEl.classList.add('is-dragging');
+        cardEl.style.position = 'fixed';
+        cardEl.style.top = `${startRect.top}px`;
+        cardEl.style.left = `${startRect.left}px`;
+        cardEl.style.width = `${startRect.width}px`;
+        cardEl.style.height = `${startRect.height}px`;
+        cardEl.style.margin = '0';
+
+        clone = document.createElement('div');
+        clone.style.width = `${startRect.width}px`;
+        clone.style.height = `${startRect.height}px`;
+        cardEl.parentNode.insertBefore(clone, cardEl);
+
+        const allFavCards = Array.from(document.querySelectorAll('.flip-card:not(.is-dragging)'));
+        placeholders = allFavCards.map(c => {
+            const r = c.getBoundingClientRect();
+            // Вычисляем центр каждой карточки
+            return { el: c, cx: r.left + r.width/2, cy: r.top + r.height/2 };
+        });
+      };
+
+      const moveDrag = (x, y) => {
+        if (!window.isDraggingCard) return;
+        
+        const dx = x - startX;
+        const dy = y - startY;
+        cardEl.style.top = `${startRect.top + dy}px`;
+        cardEl.style.left = `${startRect.left + dx}px`;
+
+        // Ищем карточку, центр которой ближе всего к нашему курсору/пальцу
+        let closest = null;
+        let minDist = Infinity;
+
+        placeholders.forEach(p => {
+            const dist = Math.hypot(p.cx - x, p.cy - y);
+            if (dist < minDist) {
+                minDist = dist;
+                closest = p;
+            }
+        });
+
+        // Визуально переставляем clone
+        if (closest && minDist < 150) { // 150px порог срабатывания
+            const container = document.getElementById('cards-container');
+            // Вставляем перед найденным элементом (или после, если тянем вправо)
+            if (x > closest.cx) {
+               closest.el.after(clone);
+            } else {
+               container.insertBefore(clone, closest.el);
+            }
+        }
+      };
+
+      const endDrag = () => {
+        if (!window.isDraggingCard) return;
+        window.isDraggingCard = false;
+
+        cardEl.classList.remove('is-dragging');
+        cardEl.style.position = '';
+        cardEl.style.top = '';
+        cardEl.style.left = '';
+        cardEl.style.width = '';
+        cardEl.style.height = '';
+
+        const children = Array.from(document.getElementById('cards-container').children);
+        const validChildren = children.filter(c => c.classList.contains('flip-card') || c === clone);
+        const newIndex = validChildren.indexOf(clone);
+
+        if (clone) clone.remove();
+
+        let favCards = cardsData.filter(c => c.isFav).sort((a, b) => a.order - b.order);
+        const draggedData = favCards.splice(index, 1)[0];
+        
+        const insertIndex = newIndex > index ? newIndex - 1 : newIndex;
+        favCards.splice(insertIndex, 0, draggedData);
+
+        favCards.forEach((c, i) => c.order = i);
+
+        render(); 
+        if(navigator.vibrate) navigator.vibrate(15);
+      };
+
+      // Сенсоры (Touch)
+      handle.addEventListener('touchstart', e => startDrag(e.touches[0].clientX, e.touches[0].clientY), {passive: false});
+      handle.addEventListener('touchmove', e => {
+         if(window.isDraggingCard) e.preventDefault(); 
+         moveDrag(e.touches[0].clientX, e.touches[0].clientY);
+      }, {passive: false});
+      handle.addEventListener('touchend', endDrag);
+
+      // ПК (Mouse)
+      handle.addEventListener('mousedown', e => {
+        if (e.button !== 0) return;
+        e.preventDefault(); 
+        startDrag(e.clientX, e.clientY);
+        
+        const onMouseMove = (ev) => {
+           ev.preventDefault();
+           moveDrag(ev.clientX, ev.clientY);
+        };
+        const onMouseUp = () => {
+           endDrag();
+           document.removeEventListener('mousemove', onMouseMove);
+           document.removeEventListener('mouseup', onMouseUp);
+        };
+        
+        document.addEventListener('mousemove', onMouseMove, {passive: false});
+        document.addEventListener('mouseup', onMouseUp);
+      });
+    }
+
+    // --- ПЕРЕКЛЮЧЕНИЕ ВКЛАДОК ---
+    tabAllBtn.addEventListener('click', () => {
+      currentTab = 'all';
+      tabAllBtn.classList.add('active');
+      tabFavBtn.classList.remove('active');
+      render();
+    });
+
+    tabFavBtn.addEventListener('click', () => {
+      currentTab = 'fav';
+      tabFavBtn.classList.add('active');
+      tabAllBtn.classList.remove('active');
+      render();
+    });
+
+    // --- СИСТЕМНЫЕ ФУНКЦИИ ---
+    const htmlEl = document.documentElement;
+    function requestFullScreenSafe() {
+      try {
+        if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+          if (htmlEl.requestFullscreen) htmlEl.requestFullscreen().catch(()=>{});
+          else if (htmlEl.webkitRequestFullscreen) htmlEl.webkitRequestFullscreen(); 
+        }
+      } catch (e) {}
+    }
+
+    document.getElementById('btn-fullscreen').addEventListener('click', () => {
+      try {
+        if (!document.fullscreenElement && !document.webkitFullscreenElement) requestFullScreenSafe();
+        else {
+          if (document.exitFullscreen) document.exitFullscreen();
+          else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+        }
+      } catch (e) {}
+    });
+
+    const updateFullscreenIcon = () => {
+      const isFull = document.fullscreenElement || document.webkitFullscreenElement;
+      document.getElementById('icon-fullscreen-use').setAttribute('href', isFull ? '#icon-minimize' : '#icon-maximize');
+    };
+    document.addEventListener('fullscreenchange', updateFullscreenIcon);
+    document.addEventListener('webkitfullscreenchange', updateFullscreenIcon);
+
+    document.getElementById('btn-theme').addEventListener('click', () => {
+      currentTheme = currentTheme === 'light' ? 'dark' : 'light';
+      htmlEl.setAttribute('data-theme', currentTheme);
+      document.getElementById('icon-theme-use').setAttribute('href', currentTheme === 'light' ? '#icon-moon' : '#icon-sun');
+    });
+
+    document.getElementById('workspace').addEventListener('scroll', () => {
+      document.getElementById('onboarding').style.display = 'none';
+    }, {once: true});
+
+    // Инициализация
+    render();
+
+  </script>
+</body>
+</html>
