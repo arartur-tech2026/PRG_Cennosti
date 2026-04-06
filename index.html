@@ -166,7 +166,7 @@
       max-width: 1200px;
       width: 100%;
       margin: 0 auto;
-      padding-bottom: 80px; /* Отступ для FAB */
+      padding-bottom: 80px; 
       position: relative;
     }
 
@@ -354,7 +354,7 @@
       color: var(--border-dashed);
       cursor: pointer;
       padding: 5px;
-      transition: color 0.2s, transform 0.2s;
+      transition: color 0.2s, transform 0.2s, opacity 0.2s;
       z-index: 10;
     }
     .btn-star.active { color: var(--star-active); }
@@ -518,7 +518,7 @@
   </div>
 
   <main class="workspace" id="workspace">
-    <div class="onboarding-toast" id="onboarding">Удерживай, чтобы прочитать. Смахни вбок 👉</div>
+    <div class="onboarding-toast" id="onboarding">Удерживай, чтобы прочитать. Смахни вправо 👉</div>
     <div class="cards-grid" id="cards-container">
       <!-- Контент генерируется JS -->
     </div>
@@ -534,7 +534,7 @@
       if (e.touches.length > 1) return; 
       
       const scrollable = e.target.closest('.workspace, .card-desc');
-      if (window.isDraggingCard) {
+      if (e.target.closest('.drag-handle') || window.isDraggingCard) {
           if (e.cancelable) e.preventDefault();
           return;
       }
@@ -601,10 +601,54 @@
     const fabCompact = document.getElementById('fab-compact');
     const fabIconUse = document.getElementById('fab-icon-use');
 
-    // --- РЕНДЕР И ЛОГИКА ---
+    // ПАТТЕРН FLIP: плавная перестройка сетки при удалении/добавлении
+    function toggleFavSmooth(id, forceState = null) {
+      // 1. Запоминаем текущие координаты всех карточек
+      const cards = document.querySelectorAll('.flip-card');
+      const firstRects = new Map();
+      cards.forEach(c => firstRects.set(c.dataset.id, c.getBoundingClientRect()));
+
+      // 2. Изменяем стейт и рендерим (карточка пропадает или появляется)
+      const card = cardsData.find(c => c.id == id);
+      if (!card) return;
+      if (forceState !== null) card.isFav = forceState;
+      else card.isFav = !card.isFav;
+      if (card.isFav) card.order = Date.now();
+      
+      render();
+
+      // 3. Вычисляем новые координаты и запускаем анимацию перетекания
+      const newCards = document.querySelectorAll('.flip-card');
+      newCards.forEach(c => {
+        const firstRect = firstRects.get(c.dataset.id);
+        if (firstRect) {
+          const lastRect = c.getBoundingClientRect();
+          const dx = firstRect.left - lastRect.left;
+          const dy = firstRect.top - lastRect.top;
+
+          if (dx !== 0 || dy !== 0) {
+            // Инвертируем позицию (возвращаем туда, где карточка была до рендера)
+            c.style.transform = `translate(${dx}px, ${dy}px)`;
+            c.style.transition = 'none';
+            
+            // В следующем кадре убираем смещение и включаем transition
+            requestAnimationFrame(() => {
+              // Принудительный reflow
+              c.getBoundingClientRect();
+              c.style.transform = '';
+              c.style.transition = 'transform 0.4s ease';
+            });
+          }
+        }
+      });
+    }
+
+    // --- РЕНДЕР ---
     function render() {
       container.innerHTML = '';
       let favCards = cardsData.filter(c => c.isFav).sort((a, b) => a.order - b.order);
+      let allCards = cardsData.filter(c => !c.isFav);
+      
       favCountEl.textContent = favCards.length;
 
       if (currentTab === 'all') {
@@ -616,16 +660,16 @@
         `;
         container.appendChild(specialCard);
 
-        cardsData.forEach(card => {
-          container.appendChild(createCardElement(card, false));
-        });
+        if (allCards.length === 0) {
+           container.innerHTML += `<div class="empty-state">Все карточки разобраны! Перейдите во вкладку «Избранное».</div>`;
+        } else {
+           allCards.forEach(card => container.appendChild(createCardElement(card, false)));
+        }
       } else {
         if (favCards.length === 0) {
           container.innerHTML = `<div class="empty-state">Вы пока не выбрали ни одной ценности. Перейдите во вкладку «Все карточки» и смахните нужные вправо.</div>`;
         } else {
-          favCards.forEach((card, index) => {
-            container.appendChild(createCardElement(card, true, index));
-          });
+          favCards.forEach((card, index) => container.appendChild(createCardElement(card, true, index)));
         }
       }
     }
@@ -674,7 +718,11 @@
       const starBtn = el.querySelector('.btn-star');
       starBtn.addEventListener('click', (e) => {
         e.stopPropagation();
-        toggleFav(card.id);
+        // Плавное исчезновение перед FLIP
+        el.style.transition = 'transform 0.3s ease, opacity 0.3s ease';
+        el.style.transform = 'scale(0.8)';
+        el.style.opacity = '0';
+        setTimeout(() => toggleFavSmooth(card.id), 250);
         if(navigator.vibrate) navigator.vibrate(15);
       });
 
@@ -685,22 +733,6 @@
       }
 
       return el;
-    }
-
-    function toggleFav(id, forceState = null) {
-      const card = cardsData.find(c => c.id === id);
-      if (!card) return;
-
-      if (forceState !== null) {
-        card.isFav = forceState;
-      } else {
-        card.isFav = !card.isFav;
-      }
-
-      if (card.isFav) {
-        card.order = Date.now();
-      }
-      render();
     }
 
     // --- ЛОГИКА HOLD-TO-FLIP И TINDER-SWIPE ---
@@ -725,10 +757,7 @@
         
         swipeWrapper.style.transition = 'none';
         
-        // В компактном режиме отключаем флип
-        if (!isCompactMode) {
-            el.classList.add('is-flipped'); 
-        }
+        if (!isCompactMode) el.classList.add('is-flipped'); 
       };
 
       const moveInteraction = (e, x, y) => {
@@ -747,14 +776,13 @@
         }
 
         if (isScrolling) return; 
-
         if (e.cancelable) e.preventDefault();
 
         currentX = diffX;
         
-        // Строгие правила свайпа для вкладок
-        if (isFavTab && currentX > 0) currentX = 0; // Из избранного смахиваем только влево
-        if (!isFavTab && currentX < 0) currentX = 0; // Изо "Всех" смахиваем только вправо
+        // Взаимоисключающие свайпы
+        if (isFavTab && currentX > 0) currentX = 0; // Из избранного только влево
+        if (!isFavTab && currentX < 0) currentX = 0; // Изо "Всех" только вправо
 
         swipeWrapper.style.transform = `translateX(${currentX}px) rotateZ(${currentX * 0.05}deg)`;
 
@@ -782,11 +810,11 @@
 
         if (currentX > threshold && !isFavTab) {
           swipeWrapper.style.transform = `translateX(${window.innerWidth}px) rotateZ(20deg)`;
-          setTimeout(() => toggleFav(card.id, true), 200);
+          setTimeout(() => toggleFavSmooth(card.id, true), 250);
           if(navigator.vibrate) navigator.vibrate(20);
-        } else if (currentX < -threshold) {
+        } else if (currentX < -threshold && isFavTab) {
           swipeWrapper.style.transform = `translateX(-${window.innerWidth}px) rotateZ(-20deg)`;
-          setTimeout(() => toggleFav(card.id, false), 200);
+          setTimeout(() => toggleFavSmooth(card.id, false), 250);
           if(navigator.vibrate) navigator.vibrate(20);
         } else {
           swipeWrapper.style.transform = ''; 
@@ -794,24 +822,20 @@
         currentX = 0;
       };
 
-      // Touch
       el.addEventListener('touchstart', (e) => startInteraction(e, e.touches[0].clientX, e.touches[0].clientY, e.target), {passive: true});
       el.addEventListener('touchmove', (e) => moveInteraction(e, e.touches[0].clientX, e.touches[0].clientY), {passive: false});
       el.addEventListener('touchend', endInteraction);
       el.addEventListener('touchcancel', endInteraction); 
 
-      // Mouse
       el.addEventListener('mousedown', (e) => {
         if (e.button !== 0) return; 
         startInteraction(e, e.clientX, e.clientY, e.target);
-        
         const onMouseMove = (ev) => moveInteraction(ev, ev.clientX, ev.clientY);
         const onMouseUp = () => {
           endInteraction();
           document.removeEventListener('mousemove', onMouseMove);
           document.removeEventListener('mouseup', onMouseUp);
         };
-        
         document.addEventListener('mousemove', onMouseMove, {passive: false});
         document.addEventListener('mouseup', onMouseUp);
       });
@@ -873,21 +897,13 @@
         });
 
         if (closest && minDist < 150) { 
-            const container = document.getElementById('cards-container');
+            const cont = document.getElementById('cards-container');
             if (isCompactMode) {
-                // В компактном режиме логика 1D (сверху-вниз)
-                if (y > closest.cy) {
-                   closest.el.after(clone);
-                } else {
-                   container.insertBefore(clone, closest.el);
-                }
+                if (y > closest.cy) closest.el.after(clone);
+                else cont.insertBefore(clone, closest.el);
             } else {
-                // В режиме сетки логика 2D
-                if (x > closest.cx) {
-                   closest.el.after(clone);
-                } else {
-                   container.insertBefore(clone, closest.el);
-                }
+                if (x > closest.cx) closest.el.after(clone);
+                else cont.insertBefore(clone, closest.el);
             }
         }
       };
@@ -917,7 +933,7 @@
 
         favCards.forEach((c, i) => c.order = i);
 
-        render(); 
+        render(); // Обновление позиций после перетаскивания (FLIP тут не нужен)
         if(navigator.vibrate) navigator.vibrate(15);
       };
 
@@ -955,7 +971,6 @@
       tabFavBtn.classList.remove('active');
       fabCompact.classList.add('hidden');
       
-      // Сбрасываем компактный вид при переходе во "Все"
       isCompactMode = false;
       container.classList.remove('is-compact');
       fabIconUse.setAttribute('href', '#icon-list');
@@ -1013,7 +1028,8 @@
     });
 
     document.getElementById('workspace').addEventListener('scroll', () => {
-      document.getElementById('onboarding').style.display = 'none';
+      const ob = document.getElementById('onboarding');
+      if (ob) ob.style.display = 'none';
     }, {once: true});
 
     // Инициализация
