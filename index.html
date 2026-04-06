@@ -11,9 +11,9 @@
       --bg-surface: #ffffff;
       --text-main: #111827;
       --text-muted: #4b5563;
-      --accent: #1e5b9f; /* Синий как на макетах */
+      --accent: #1e5b9f; 
       --accent-soft: #e0f2fe;
-      --accent-anti: #60a5fa; /* Голубой для антиценностей */
+      --accent-anti: #60a5fa; 
       --star-active: #f59e0b;
       --border: #e5e7eb;
       --border-dashed: #9ca3af;
@@ -125,6 +125,28 @@
       box-shadow: var(--shadow-sm);
     }
 
+    /* Плавающая кнопка (FAB) для списка */
+    .fab-btn {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      width: clamp(50px, 12vw, 60px);
+      height: clamp(50px, 12vw, 60px);
+      background-color: var(--accent);
+      color: #fff;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: var(--shadow-lg);
+      cursor: pointer;
+      z-index: 1000;
+      border: none;
+      transition: transform 0.3s ease, opacity 0.3s ease;
+    }
+    .fab-btn:active { transform: scale(0.9); }
+    .fab-btn.hidden { opacity: 0; pointer-events: none; transform: translateY(20px) scale(0.9); }
+
     /* РАБОЧАЯ ЗОНА */
     .workspace {
       flex: 1; 
@@ -142,10 +164,40 @@
       grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
       gap: 20px;
       max-width: 1200px;
-      margin: 0 auto;
-      padding-bottom: 40px;
-      position: relative;
       width: 100%;
+      margin: 0 auto;
+      padding-bottom: 80px; /* Отступ для FAB */
+      position: relative;
+    }
+
+    /* Компактный режим (Избранное) */
+    .cards-grid.is-compact {
+      grid-template-columns: 1fr;
+      max-width: 600px;
+    }
+    
+    .cards-grid.is-compact .flip-card {
+      aspect-ratio: 2 / 1;
+      min-height: auto;
+    }
+    
+    .cards-grid.is-compact .card-hint {
+      display: none;
+    }
+    
+    .cards-grid.is-compact .card-top-row {
+      margin-bottom: 5px;
+      padding-bottom: 5px;
+    }
+    
+    .cards-grid.is-compact .card-title {
+      font-size: clamp(1.1rem, 4vw, 1.3rem);
+      margin: 5px 0;
+    }
+    
+    .cards-grid.is-compact .card-quote {
+      font-size: clamp(0.85rem, 3.5vw, 1.1rem);
+      margin-bottom: auto;
     }
 
     /* СПЕЦИАЛЬНАЯ КАРТОЧКА (УСТАНОВКА) */
@@ -186,6 +238,7 @@
       position: relative;
       user-select: none;
       z-index: 1;
+      transition: aspect-ratio 0.3s ease;
     }
 
     .flip-card.is-dragging {
@@ -424,8 +477,18 @@
         <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
       </symbol>
       <symbol id="icon-drag" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <circle cx="9" cy="12" r="1.5"></circle><circle cx="9" cy="5" r="1.5"></circle><circle cx="9" cy="19" r="1.5"></circle>
-        <circle cx="15" cy="12" r="1.5"></circle><circle cx="15" cy="5" r="1.5"></circle><circle cx="15" cy="19" r="1.5"></circle>
+        <line x1="8" y1="6" x2="21" y2="6"></line>
+        <line x1="8" y1="12" x2="21" y2="12"></line>
+        <line x1="8" y1="18" x2="21" y2="18"></line>
+        <line x1="3" y1="6" x2="3.01" y2="6"></line>
+        <line x1="3" y1="12" x2="3.01" y2="12"></line>
+        <line x1="3" y1="18" x2="3.01" y2="18"></line>
+      </symbol>
+      <symbol id="icon-list" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line>
+      </symbol>
+      <symbol id="icon-grid" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect>
       </symbol>
       <symbol id="icon-moon" viewBox="0 0 24 24"><path fill-rule="evenodd" d="M9.528 1.718a.75.75 0 01.162.819A8.97 8.97 0 009 6a9 9 0 009 9 8.97 8.97 0 003.463-.69.75.75 0 01.981.98 10.503 10.503 0 01-9.694 6.46c-5.799 0-10.5-4.701-10.5-10.5 0-4.368 2.667-8.112 6.46-9.694a.75.75 0 01.818.162z" clip-rule="evenodd"/></symbol>
       <symbol id="icon-sun" viewBox="0 0 24 24"><path d="M12 2.25a.75.75 0 01.75.75v2.25a.75.75 0 01-1.5 0V3a.75.75 0 01.75-.75zM7.5 12a4.5 4.5 0 119 0 4.5 4.5 0 01-9 0zM18.894 6.166a.75.75 0 00-1.06-1.06l-1.591 1.59a.75.75 0 101.06 1.061l1.591-1.59zM21.75 12a.75.75 0 01-.75.75h-2.25a.75.75 0 010-1.5H21a.75.75 0 01.75.75zM17.834 18.894a.75.75 0 001.06-1.06l-1.59-1.591a.75.75 0 10-1.061 1.06l1.59 1.591zM12 18.75a.75.75 0 01.75.75V21a.75.75 0 01-1.5 0v-1.5a.75.75 0 01.75-.75zM6.166 17.834a.75.75 0 00-1.06 1.06l1.59 1.591a.75.75 0 101.06-1.061l-1.59-1.59zM4.5 12a.75.75 0 01-.75.75H1.5a.75.75 0 010-1.5h2.25a.75.75 0 01.75.75zM6.166 6.166a.75.75 0 001.06-1.06l-1.59-1.59a.75.75 0 00-1.061 1.06l1.59 1.59z"/></symbol>
@@ -455,11 +518,15 @@
   </div>
 
   <main class="workspace" id="workspace">
-    <div class="onboarding-toast" id="onboarding">Удерживай, чтобы прочитать. Смахни – выбрать 👉</div>
+    <div class="onboarding-toast" id="onboarding">Удерживай, чтобы прочитать. Смахни вбок 👉</div>
     <div class="cards-grid" id="cards-container">
       <!-- Контент генерируется JS -->
     </div>
   </main>
+
+  <button class="fab-btn hidden" id="fab-compact" title="Сменить вид">
+    <svg><use id="fab-icon-use" href="#icon-list"></use></svg>
+  </button>
 
   <script>
     // --- АГРЕССИВНЫЙ ФИКС СКРОЛЛА (SCROLL-CHAINING) ДЛЯ iOS / IFRAME ---
@@ -494,7 +561,6 @@
       }
     }, { passive: false });
 
-
     // --- БАЗА ДАННЫХ КАРТОЧЕК ---
     let cardsData = [
       { id: 1, num: 1, title: "Жизнь", quote: "«Жизнь дороже золота»", desc: "Жизнь – высшая ценность, и речь всегда о конкретном человеке, а не об абстрактном «индивиде». Защита жизни означает приоритет безопасности, заботы и недопустимость обесценивания человека как «расходного материала».", isAnti: false, isFav: false, order: 0 },
@@ -525,12 +591,15 @@
 
     let currentTab = 'all'; // 'all' или 'fav'
     let currentTheme = 'light';
+    let isCompactMode = false;
     window.isDraggingCard = false;
 
     const container = document.getElementById('cards-container');
     const tabAllBtn = document.getElementById('tab-all');
     const tabFavBtn = document.getElementById('tab-fav');
     const favCountEl = document.getElementById('fav-count');
+    const fabCompact = document.getElementById('fab-compact');
+    const fabIconUse = document.getElementById('fab-icon-use');
 
     // --- РЕНДЕР И ЛОГИКА ---
     function render() {
@@ -575,7 +644,6 @@
         `;
       }
 
-      // Новая структура: swipe-wrapper двигает обертку вбок, а flip-card-inner вращается внутри
       el.innerHTML = `
         <div class="swipe-indicator swipe-right-bg">⭐</div>
         <div class="swipe-indicator swipe-left-bg">❌</div>
@@ -603,7 +671,6 @@
         </div>
       `;
 
-      // Обработчик звездочки
       const starBtn = el.querySelector('.btn-star');
       starBtn.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -611,10 +678,8 @@
         if(navigator.vibrate) navigator.vibrate(15);
       });
 
-      // Логика "Удержание (Флип) + Тиндер-свайпы"
       initHoldAndSwipeLogic(el, card, isFavTab);
 
-      // Логика сортировки (Только Избранное)
       if (isFavTab) {
         initGridDragLogic(el, card.id, index);
       }
@@ -638,7 +703,7 @@
       render();
     }
 
-    // --- ЛОГИКА HOLD-TO-FLIP И TINDER-SWIPE В СЕТКЕ ---
+    // --- ЛОГИКА HOLD-TO-FLIP И TINDER-SWIPE ---
     function initHoldAndSwipeLogic(el, card, isFavTab) {
       let startX = 0, startY = 0;
       let currentX = 0;
@@ -651,7 +716,6 @@
       const indLeft = el.querySelector('.swipe-left-bg');
 
       const startInteraction = (e, x, y, target) => {
-        // Игнорируем контролы
         if (target.closest('.drag-handle') || target.closest('.btn-star')) return;
         
         startX = x;
@@ -661,8 +725,10 @@
         
         swipeWrapper.style.transition = 'none';
         
-        // Мгновенный переворот при удержании
-        el.classList.add('is-flipped'); 
+        // В компактном режиме отключаем флип
+        if (!isCompactMode) {
+            el.classList.add('is-flipped'); 
+        }
       };
 
       const moveInteraction = (e, x, y) => {
@@ -671,29 +737,27 @@
         const diffX = x - startX;
         const diffY = y - startY;
 
-        // Детект вертикального скролла сетки (если двигаем палец вверх/вниз)
         if (!isScrolling && Math.abs(diffY) > 10 && Math.abs(diffY) > Math.abs(diffX)) {
             isSwiping = false;
             isScrolling = true;
             swipeWrapper.style.transform = '';
             indRight.style.opacity = 0;
             indLeft.style.opacity = 0;
-            // Оставляем карточку перевернутой (is-flipped), чтобы человек мог читать и скроллить текст
             return;
         }
 
-        if (isScrolling) return; // Разрешаем нативный скролл
+        if (isScrolling) return; 
 
-        // Предотвращаем дефолтный скролл страницы при намеренном свайпе вбок
         if (e.cancelable) e.preventDefault();
 
         currentX = diffX;
+        
+        // Строгие правила свайпа для вкладок
         if (isFavTab && currentX > 0) currentX = 0; // Из избранного смахиваем только влево
+        if (!isFavTab && currentX < 0) currentX = 0; // Изо "Всех" смахиваем только вправо
 
-        // Двигаем обертку (внутренность остается перевернутой)
         swipeWrapper.style.transform = `translateX(${currentX}px) rotateZ(${currentX * 0.05}deg)`;
 
-        // Показ индикаторов под карточкой
         if (currentX > 20 && !isFavTab) {
            indRight.style.opacity = Math.min(currentX / threshold, 1);
            indLeft.style.opacity = 0;
@@ -707,10 +771,9 @@
       };
 
       const endInteraction = () => {
-        // Как только отпустили — всегда возвращаем на лицевую сторону
         el.classList.remove('is-flipped'); 
 
-        if (!isSwiping) return; // Если мы скроллили, то свайп был отменен
+        if (!isSwiping) return; 
         isSwiping = false;
         
         swipeWrapper.style.transition = 'transform 0.4s cubic-bezier(0.4, 0.2, 0.2, 1)';
@@ -718,17 +781,14 @@
         indLeft.style.opacity = 0;
 
         if (currentX > threshold && !isFavTab) {
-          // Свайп вправо (Добавить в избранное)
           swipeWrapper.style.transform = `translateX(${window.innerWidth}px) rotateZ(20deg)`;
           setTimeout(() => toggleFav(card.id, true), 200);
           if(navigator.vibrate) navigator.vibrate(20);
         } else if (currentX < -threshold) {
-          // Свайп влево (Убрать из избранного)
           swipeWrapper.style.transform = `translateX(-${window.innerWidth}px) rotateZ(-20deg)`;
           setTimeout(() => toggleFav(card.id, false), 200);
           if(navigator.vibrate) navigator.vibrate(20);
         } else {
-          // Возврат на место
           swipeWrapper.style.transform = ''; 
         }
         currentX = 0;
@@ -738,7 +798,7 @@
       el.addEventListener('touchstart', (e) => startInteraction(e, e.touches[0].clientX, e.touches[0].clientY, e.target), {passive: true});
       el.addEventListener('touchmove', (e) => moveInteraction(e, e.touches[0].clientX, e.touches[0].clientY), {passive: false});
       el.addEventListener('touchend', endInteraction);
-      el.addEventListener('touchcancel', endInteraction); // Обработка прерываний ОС
+      el.addEventListener('touchcancel', endInteraction); 
 
       // Mouse
       el.addEventListener('mousedown', (e) => {
@@ -757,7 +817,7 @@
       });
     }
 
-    // --- ЛОГИКА СОРТИРОВКИ ДЛЯ СЕТКИ (2D DRAG & DROP) ---
+    // --- ЛОГИКА СОРТИРОВКИ ДЛЯ СЕТКИ/СПИСКА (DRAG & DROP) ---
     function initGridDragLogic(cardEl, cardId, index) {
       const handle = cardEl.querySelector('.drag-handle');
       if (!handle) return;
@@ -789,7 +849,6 @@
         const allFavCards = Array.from(document.querySelectorAll('.flip-card:not(.is-dragging)'));
         placeholders = allFavCards.map(c => {
             const r = c.getBoundingClientRect();
-            // Вычисляем центр каждой карточки (Теорема Пифагора)
             return { el: c, cx: r.left + r.width/2, cy: r.top + r.height/2 };
         });
       };
@@ -802,7 +861,6 @@
         cardEl.style.top = `${startRect.top + dy}px`;
         cardEl.style.left = `${startRect.left + dx}px`;
 
-        // Ищем карточку, центр которой ближе всего к нашему курсору/пальцу
         let closest = null;
         let minDist = Infinity;
 
@@ -814,13 +872,22 @@
             }
         });
 
-        // Визуально переставляем clone
-        if (closest && minDist < 150) { // 150px порог срабатывания
+        if (closest && minDist < 150) { 
             const container = document.getElementById('cards-container');
-            if (x > closest.cx) {
-               closest.el.after(clone);
+            if (isCompactMode) {
+                // В компактном режиме логика 1D (сверху-вниз)
+                if (y > closest.cy) {
+                   closest.el.after(clone);
+                } else {
+                   container.insertBefore(clone, closest.el);
+                }
             } else {
-               container.insertBefore(clone, closest.el);
+                // В режиме сетки логика 2D
+                if (x > closest.cx) {
+                   closest.el.after(clone);
+                } else {
+                   container.insertBefore(clone, closest.el);
+                }
             }
         }
       };
@@ -854,7 +921,6 @@
         if(navigator.vibrate) navigator.vibrate(15);
       };
 
-      // Сенсоры (Touch)
       handle.addEventListener('touchstart', e => startDrag(e.touches[0].clientX, e.touches[0].clientY), {passive: false});
       handle.addEventListener('touchmove', e => {
          if(window.isDraggingCard) e.preventDefault(); 
@@ -862,7 +928,6 @@
       }, {passive: false});
       handle.addEventListener('touchend', endDrag);
 
-      // ПК (Mouse)
       handle.addEventListener('mousedown', e => {
         if (e.button !== 0) return;
         e.preventDefault(); 
@@ -883,11 +948,18 @@
       });
     }
 
-    // --- ПЕРЕКЛЮЧЕНИЕ ВКЛАДОК ---
+    // --- ПЕРЕКЛЮЧЕНИЕ ВКЛАДОК И РЕЖИМОВ ---
     tabAllBtn.addEventListener('click', () => {
       currentTab = 'all';
       tabAllBtn.classList.add('active');
       tabFavBtn.classList.remove('active');
+      fabCompact.classList.add('hidden');
+      
+      // Сбрасываем компактный вид при переходе во "Все"
+      isCompactMode = false;
+      container.classList.remove('is-compact');
+      fabIconUse.setAttribute('href', '#icon-list');
+      
       render();
     });
 
@@ -895,7 +967,15 @@
       currentTab = 'fav';
       tabFavBtn.classList.add('active');
       tabAllBtn.classList.remove('active');
+      fabCompact.classList.remove('hidden');
       render();
+    });
+
+    fabCompact.addEventListener('click', () => {
+      isCompactMode = !isCompactMode;
+      container.classList.toggle('is-compact', isCompactMode);
+      fabIconUse.setAttribute('href', isCompactMode ? '#icon-grid' : '#icon-list');
+      if(navigator.vibrate) navigator.vibrate(10);
     });
 
     // --- СИСТЕМНЫЕ ФУНКЦИИ ---
